@@ -1,0 +1,85 @@
+body {
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+header {
+    border-radius: 0 0 10px 10px;
+}
+
+.card {
+    border-radius: 10px;
+    overflow: hidden;
+    border: none;
+    margin-bottom: 20px;
+}
+
+.table th {
+    background-color: #f1f1f1;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    margin-right: 5px;
+}
+
+#beanForm {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.bean-detail-row {
+    display: flex;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.bean-detail-label {
+    font-weight: bold;
+    width: 200px;
+    color: #555;
+}
+
+.bean-detail-value {
+    flex: 1;
+}
+
+#loadingIndicator {
+    display: none;
+    text-align: center;
+    padding: 10px;
+}
+
+@media (max-width: 768px) {
+    .bean-detail-row {
+        flex-direction: column;
+    }
+    
+    .bean-detail-label {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+
+    #beanForm .col-md-3,
+    #beanForm .col-md-2,
+    #beanForm .col-md-1 {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}
+
+/* Smaller Add Item Form */
+.col-md-4 {
+    max-width: 350px;
+}
+
+#beanForm button {
+    margin-top: 15px;
+}

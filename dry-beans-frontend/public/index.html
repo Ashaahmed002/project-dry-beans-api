@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dry Beans Database</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container-fluid">
+        <header class="bg-primary text-white p-4 mb-4">
+            <h1><i class="fas fa-seedling me-2"></i>Dry Beans Database</h1>
+            <p class="lead">Manage the UC Irvine Dry Beans Dataset</p>
+        </header>
+
+        <div id="message" class="alert" style="display: none;"></div>
+
+        <div class="row">
+            <!-- Bean Add Form Section -->
+            <div class="col-md-4 mb-4">
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
+                        <h3 id="formTitle"><i class="fas fa-plus-circle me-2"></i>Add New Bean</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="beanForm">
+                            <input type="hidden" id="beanId">
+                            <div class="mb-3">
+                                <label for="beanClass" class="form-label">Class</label>
+                                <select class="form-select" id="beanClass" required>
+                                    <option value="">Select class</option>
+                                    <option value="DERMASON">DERMASON</option>
+                                    <option value="SIRA">SIRA</option>
+                                    <option value="SEKER">SEKER</option>
+                                    <option value="HOROZ">HOROZ</option>
+                                    <option value="CALI">CALI</option>
+                                    <option value="BARBUNYA">BARBUNYA</option>
+                                    <option value="BOMBAY">BOMBAY</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="beanArea" class="form-label">Area</label>
+                                <input type="number" step="0.001" class="form-control" id="beanArea" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="beanPerimeter" class="form-label">Perimeter</label>
+                                <input type="number" step="0.001" class="form-control" id="beanPerimeter" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="beanMajorAxis" class="form-label">Major Axis Length</label>
+                                <input type="number" step="0.001" class="form-control" id="beanMajorAxis" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="beanMinorAxis" class="form-label">Minor Axis Length</label>
+                                <input type="number" step="0.001" class="form-control" id="beanMinorAxis" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-save me-2"></i>Save Bean
+                            </button>
+                            <button type="button" id="cancelBtn" class="btn btn-outline-secondary w-100 mt-2 d-none">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bean Records Section -->
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white">
+                        <h3><i class="fas fa-list me-2"></i>Bean Records</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Class</th>
+                                        <th>Area</th>
+                                        <th>Perimeter</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="beansTableBody">
+                                    <!-- Data will load here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="detailsModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">Bean Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body" id="beanDetailsContent">
+                        <!-- Details will be inserted here -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
