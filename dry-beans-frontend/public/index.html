@@ -3,18 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dry Bean Dataset Manager</title>
+  <title>Dry Beans Database</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.css" rel="stylesheet">
   <link href="styles.css" rel="stylesheet">
 </head>
 <body>
-  <!-- Toast & Spinner -->
-  <div id="message" class="alert" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 1100;"></div>
-  <div id="loadingIndicator"></div>
 
-  <!-- Theme Toggle Button -->
-  <button id="themeToggle" class="theme-toggle" title="Switch Theme">🌓</button>
+  <div id="toast" class="toast align-items-center text-white position-fixed top-0 end-0 m-3" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner-container">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-3">Loading Beans...</p>
+    </div>
+  </div>
 
   <!-- Main Container -->
   <div class="container-fluid py-4">
@@ -22,17 +34,101 @@
       <div class="col-md-12">
         <div class="card shadow mb-4">
           <div class="card-header bg-primary text-white">
-            <h2 class="fw-bold mb-0"><i class="fas fa-seedling me-2"></i>Dry Bean Dataset</h2>
-          </div>
-          <div class="card-body">
-            <div class="row mb-3">
-              <div class="col-md-8">
-                <input type="text" id="searchInput" class="form-control" placeholder="🔍 Search by class or feature...">
-              </div>
-              <div class="col-md-4 text-end">
+            <div class="d-flex justify-content-between align-items-center">
+              <h2 class="fw-bold mb-0"><i class="fas fa-seedling me-2"></i>Dry Beans Database</h2>
+              <div class="d-flex">
+                <button class="btn btn-light me-2" id="toggleChartBtn">
+                  <i class="fas fa-chart-pie me-1"></i> Toggle Chart
+                </button>
                 <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addBeanModal">
                   <i class="fas fa-plus-circle me-1"></i> Add Bean
                 </button>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <!-- Stats Cards -->
+            <div class="row mb-4" id="statsContainer">
+              <div class="col-md-3 mb-3">
+                <div class="card stat-card bg-info bg-opacity-10 border-info">
+                  <div class="card-body">
+                    <h5 class="card-title">Total Beans</h5>
+                    <div class="d-flex align-items-center">
+                      <i class="fas fa-seedling fa-2x text-info me-3"></i>
+                      <h2 class="mb-0" id="totalBeans">0</h2>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3 mb-3">
+                <div class="card stat-card bg-success bg-opacity-10 border-success">
+                  <div class="card-body">
+                    <h5 class="card-title">Classes</h5>
+                    <div class="d-flex align-items-center">
+                      <i class="fas fa-tags fa-2x text-success me-3"></i>
+                      <h2 class="mb-0" id="totalClasses">0</h2>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3 mb-3">
+                <div class="card stat-card bg-warning bg-opacity-10 border-warning">
+                  <div class="card-body">
+                    <h5 class="card-title">Avg Area</h5>
+                    <div class="d-flex align-items-center">
+                      <i class="fas fa-ruler-combined fa-2x text-warning me-3"></i>
+                      <h2 class="mb-0" id="avgArea">0</h2>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3 mb-3">
+                <div class="card stat-card bg-danger bg-opacity-10 border-danger">
+                  <div class="card-body">
+                    <h5 class="card-title">Avg Perimeter</h5>
+                    <div class="d-flex align-items-center">
+                      <i class="fas fa-draw-polygon fa-2x text-danger me-3"></i>
+                      <h2 class="mb-0" id="avgPerimeter">0</h2>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="row mb-4 d-none" id="chartSection">
+              <div class="col-md-12">
+                <div class="card shadow-sm">
+                  <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Beans Distribution</h5>
+                  </div>
+                  <div class="card-body">
+                    <canvas id="beansChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Search and Table Section -->
+            <div class="row mb-3">
+              <div class="col-md-8">
+                <div class="input-group">
+                  <span class="input-group-text bg-primary text-white"><i class="fas fa-search"></i></span>
+                  <input type="text" id="searchInput" class="form-control" placeholder="Search beans...">
+                  <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-md-4 text-end">
+                <div class="btn-group" role="group">
+                  <button class="btn btn-outline-primary" id="exportCsvBtn">
+                    <i class="fas fa-file-csv me-1"></i> Export
+                  </button>
+                  <button class="btn btn-outline-secondary" id="refreshBtn">
+                    <i class="fas fa-sync-alt me-1"></i> Refresh
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -40,19 +136,27 @@
               <table class="table table-hover align-middle" id="beanTable">
                 <thead class="table-primary">
                   <tr>
-                    <th>ID</th>
-                    <th>Class</th>
-                    <th>Area</th>
-                    <th>Perimeter</th>
-                    <th>Major Axis</th>
-                    <th>Minor Axis</th>
+                    <th>ID <button class="btn btn-sm btn-sort" data-sort="id"><i class="fas fa-sort"></i></button></th>
+                    <th>Bean Class <button class="btn btn-sm btn-sort" data-sort="bean_class"><i class="fas fa-sort"></i></button></th>
+                    <th>Area <button class="btn btn-sm btn-sort" data-sort="area"><i class="fas fa-sort"></i></button></th>
+                    <th>Perimeter <button class="btn btn-sm btn-sort" data-sort="perimeter"><i class="fas fa-sort"></i></button></th>
+                    <th>Major Axis <button class="btn btn-sm btn-sort" data-sort="major_axis_length"><i class="fas fa-sort"></i></button></th>
+                    <th>Minor Axis <button class="btn btn-sm btn-sort" data-sort="minor_axis_length"><i class="fas fa-sort"></i></button></th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="beansTableBody">
-                  <!-- Data populated by script.js -->
+                 
                 </tbody>
               </table>
+              <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted" id="tableInfo">Showing 0 entries</div>
+                <nav aria-label="Page navigation">
+                  <ul class="pagination pagination-sm" id="pagination">
+                    
+                  </ul>
+                </nav>
+              </div>
             </div>
           </div>
         </div>
@@ -73,9 +177,9 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="addBeanClass" class="form-label">Class</label>
+                  <label for="addBeanClass" class="form-label">Bean Class</label>
                   <select class="form-select" id="addBeanClass" required>
-                    <option value="">Select class</option>
+                    <option value="">Select bean class</option>
                     <option value="DERMASON">DERMASON</option>
                     <option value="SIRA">SIRA</option>
                     <option value="SEKER">SEKER</option>
@@ -114,11 +218,19 @@
                   <input type="number" step="0.001" class="form-control" id="addBeanMinorAxis" required>
                 </div>
               </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="addBeanImage" class="form-label">Bean Image (URL)</label>
+                  <input type="url" class="form-control" id="addBeanImage" placeholder="Optional image URL">
+                </div>
+              </div>
             </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-primary">Save Bean</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save me-1"></i> Save Bean
+            </button>
           </div>
         </form>
       </div>
@@ -134,7 +246,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body" id="beanDetailsContent">
-          <!-- Content will be populated by JavaScript -->
+       
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -143,7 +255,7 @@
     </div>
   </div>
 
-  <!-- Edit Bean Modal -->
+
   <div class="modal fade" id="editBeanModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -157,9 +269,9 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="editBeanClass" class="form-label">Class</label>
+                  <label for="editBeanClass" class="form-label">Bean Class</label>
                   <select class="form-select" id="editBeanClass" required>
-                    <option value="">Select class</option>
+                    <option value="">Select bean class</option>
                     <option value="DERMASON">DERMASON</option>
                     <option value="SIRA">SIRA</option>
                     <option value="SEKER">SEKER</option>
@@ -198,11 +310,19 @@
                   <input type="number" step="0.001" class="form-control" id="editBeanMinorAxis" required>
                 </div>
               </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="editBeanImage" class="form-label">Bean Image (URL)</label>
+                  <input type="url" class="form-control" id="editBeanImage" placeholder="Optional image URL">
+                </div>
+              </div>
             </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-primary">Update Bean</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save me-1"></i> Update Bean
+            </button>
           </div>
         </form>
       </div>
@@ -210,6 +330,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
