@@ -1,10 +1,40 @@
 const API_BASE_URL = 'http://localhost:3000/beans';
-let currentEditingId = null;
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize theme toggle
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle.addEventListener('click', toggleTheme);
+    
+    // Load initial data
     loadBeans();
-    setupForm();
+    
+    // Set up search functionality
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+        filterBeans(e.target.value);
+    });
+    
+    // Set up add bean form
+    document.getElementById('addBeanForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        await addBean();
+    });
+    
+    // Set up edit bean form
+    document.getElementById('editBeanForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        await updateBean();
+    });
 });
+
+function toggleTheme() {
+    document.body.classList.toggle('dark');
+    localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+}
+
+// Check for saved theme preference
+if (localStorage.getItem('darkMode') === 'true') {
+    document.body.classList.add('dark');
+}
 
 async function loadBeans() {
     try {
@@ -34,6 +64,16 @@ async function loadBeans() {
     }
 }
 
+function filterBeans(searchTerm) {
+    const rows = document.querySelectorAll('#beansTableBody tr');
+    searchTerm = searchTerm.toLowerCase();
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+}
+
 function renderBeansTable(beans) {
     const tableBody = document.getElementById('beansTableBody');
     tableBody.innerHTML = '';
@@ -45,6 +85,8 @@ function renderBeansTable(beans) {
             <td>${bean.Class || bean.class || 'N/A'}</td>
             <td>${formatNumber(bean.Area || bean.area)}</td>
             <td>${formatNumber(bean.Perimeter || bean.perimeter)}</td>
+            <td>${formatNumber(bean.MajorAxisLength || bean.major_axis_length)}</td>
+            <td>${formatNumber(bean.MinorAxisLength || bean.minor_axis_length)}</td>
             <td>
                 <button class="btn btn-sm btn-info view-btn" data-id="${bean.id || bean._id}">
                     <i class="fas fa-eye"></i> View
@@ -64,72 +106,123 @@ function renderBeansTable(beans) {
 }
 
 function setupButtonEventListeners() {
+    // View button
     document.querySelectorAll('.view-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const beanId = e.currentTarget.getAttribute('data-id');
-            try {
-                const response = await fetch(`${API_BASE_URL}/${beanId}`);
-                if (!response.ok) {
-                    throw new Error(`Server returned ${response.status}`);
-                }
-                const bean = await response.json();
-                showBeanDetails(bean);
-            } catch (error) {
-                console.error('Error viewing bean:', error);
-                showError(`Error viewing bean: ${error.message}`);
-            }
+        btn.addEventListener('click', async function() {
+            const beanId = this.getAttribute('data-id');
+            await viewBean(beanId);
         });
     });
 
+    // Edit button
     document.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const beanId = e.currentTarget.getAttribute('data-id');
-            try {
-                const response = await fetch(`${API_BASE_URL}/${beanId}`);
-                if (!response.ok) {
-                    throw new Error(`Server returned ${response.status}`);
-                }
-                const bean = await response.json();
-                populateEditForm(bean);
-            } catch (error) {
-                console.error('Error editing bean:', error);
-                showError(`Error editing bean: ${error.message}`);
-            }
+        btn.addEventListener('click', async function() {
+            const beanId = this.getAttribute('data-id');
+            await loadBeanForEdit(beanId);
         });
     });
 
+    // Delete button
     document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', deleteBean);
+        btn.addEventListener('click', async function() {
+            const beanId = this.getAttribute('data-id');
+            await deleteBean(beanId);
+        });
     });
 }
 
-function setupForm() {
-    const form = document.getElementById('beanForm');
-    const cancelBtn = document.getElementById('cancelBtn');
-
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        await saveBean();
-    });
-
-    cancelBtn.addEventListener('click', resetForm);
-}
-
-async function saveBean() {
+async function viewBean(beanId) {
     try {
+        showLoading(true);
+        const response = await fetch(`${API_BASE_URL}/${beanId}`);
+
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}`);
+        }
+
+        const bean = await response.json();
+
+        const modalContent = document.getElementById('beanDetailsContent');
+        modalContent.innerHTML = `
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <h6>Class:</h6>
+                    <p>${bean.Class || bean.class || 'N/A'}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Area:</h6>
+                    <p>${formatNumber(bean.Area || bean.area)}</p>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <h6>Perimeter:</h6>
+                    <p>${formatNumber(bean.Perimeter || bean.perimeter)}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Major Axis Length:</h6>
+                    <p>${formatNumber(bean.MajorAxisLength || bean.major_axis_length)}</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Minor Axis Length:</h6>
+                    <p>${formatNumber(bean.MinorAxisLength || bean.minor_axis_length)}</p>
+                </div>
+            </div>
+        `;
+
+        const viewModal = new bootstrap.Modal(document.getElementById('viewBeanModal'));
+        viewModal.show();
+    } catch (error) {
+        console.error('Error viewing bean:', error);
+        showError(`Error viewing bean: ${error.message}`);
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function loadBeanForEdit(beanId) {
+    try {
+        showLoading(true);
+        const response = await fetch(`${API_BASE_URL}/${beanId}`);
+
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}`);
+        }
+
+        const bean = await response.json();
+
+        document.getElementById('editBeanId').value = bean.id || bean._id;
+        document.getElementById('editBeanClass').value = bean.Class || bean.class || '';
+        document.getElementById('editBeanArea').value = bean.Area || bean.area || '';
+        document.getElementById('editBeanPerimeter').value = bean.Perimeter || bean.perimeter || '';
+        document.getElementById('editBeanMajorAxis').value = bean.MajorAxisLength || bean.major_axis_length || '';
+        document.getElementById('editBeanMinorAxis').value = bean.MinorAxisLength || bean.minor_axis_length || '';
+
+        const editModal = new bootstrap.Modal(document.getElementById('editBeanModal'));
+        editModal.show();
+    } catch (error) {
+        console.error('Error loading bean for edit:', error);
+        showError(`Error loading bean for editing: ${error.message}`);
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function addBean() {
+    try {
+        showLoading(true);
         const formData = {
-            class: document.getElementById('beanClass').value,
-            area: parseFloat(document.getElementById('beanArea').value),
-            perimeter: parseFloat(document.getElementById('beanPerimeter').value),
-            major_axis_length: parseFloat(document.getElementById('beanMajorAxis').value),
-            minor_axis_length: parseFloat(document.getElementById('beanMinorAxis').value)
+            class: document.getElementById('addBeanClass').value,
+            area: parseFloat(document.getElementById('addBeanArea').value),
+            perimeter: parseFloat(document.getElementById('addBeanPerimeter').value),
+            major_axis_length: parseFloat(document.getElementById('addBeanMajorAxis').value),
+            minor_axis_length: parseFloat(document.getElementById('addBeanMinorAxis').value)
         };
 
-        const url = currentEditingId ? `${API_BASE_URL}/${currentEditingId}` : API_BASE_URL;
-        const method = currentEditingId ? 'PUT' : 'POST';
-
-        const response = await fetch(url, {
-            method: method,
+        const response = await fetch(API_BASE_URL, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
         });
@@ -139,64 +232,65 @@ async function saveBean() {
         }
 
         const result = await response.json();
-        resetForm();
+        
+        // Close the modal and refresh the table
+        const addModal = bootstrap.Modal.getInstance(document.getElementById('addBeanModal'));
+        addModal.hide();
+        
         await loadBeans();
-        showMessage(`Bean ${currentEditingId ? 'updated' : 'created'} successfully!`);
+        showMessage('Bean added successfully!');
     } catch (error) {
-        console.error('Error saving bean:', error);
-        showError(`Failed to save bean: ${error.message}`);
+        console.error('Error adding bean:', error);
+        showError(`Failed to add bean: ${error.message}`);
+    } finally {
+        showLoading(false);
     }
 }
 
-function showBeanDetails(bean) {
-    const modalContent = document.getElementById('beanDetailsContent');
-    modalContent.innerHTML = `
-        <div class="bean-detail-row">
-            <div class="bean-detail-label">Class:</div>
-            <div class="bean-detail-value">${bean.Class || bean.class || 'N/A'}</div>
-        </div>
-        <div class="bean-detail-row">
-            <div class="bean-detail-label">Area:</div>
-            <div class="bean-detail-value">${formatNumber(bean.Area || bean.area)}</div>
-        </div>
-        <div class="bean-detail-row">
-            <div class="bean-detail-label">Perimeter:</div>
-            <div class="bean-detail-value">${formatNumber(bean.Perimeter || bean.perimeter)}</div>
-        </div>
-        <div class="bean-detail-row">
-            <div class="bean-detail-label">Major Axis Length:</div>
-            <div class="bean-detail-value">${formatNumber(bean.MajorAxisLength || bean.major_axis_length)}</div>
-        </div>
-        <div class="bean-detail-row">
-            <div class="bean-detail-label">Minor Axis Length:</div>
-            <div class="bean-detail-value">${formatNumber(bean.MinorAxisLength || bean.minor_axis_length)}</div>
-        </div>
-    `;
+async function updateBean() {
+    try {
+        showLoading(true);
+        const beanId = document.getElementById('editBeanId').value;
+        
+        const formData = {
+            class: document.getElementById('editBeanClass').value,
+            area: parseFloat(document.getElementById('editBeanArea').value),
+            perimeter: parseFloat(document.getElementById('editBeanPerimeter').value),
+            major_axis_length: parseFloat(document.getElementById('editBeanMajorAxis').value),
+            minor_axis_length: parseFloat(document.getElementById('editBeanMinorAxis').value)
+        };
 
-    const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
-    modal.show();
+        const response = await fetch(`${API_BASE_URL}/${beanId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server returned ${response.status}`);
+        }
+
+        const result = await response.json();
+        
+        // Close the modal and refresh the table
+        const editModal = bootstrap.Modal.getInstance(document.getElementById('editBeanModal'));
+        editModal.hide();
+        
+        await loadBeans();
+        showMessage('Bean updated successfully!');
+    } catch (error) {
+        console.error('Error updating bean:', error);
+        showError(`Failed to update bean: ${error.message}`);
+    } finally {
+        showLoading(false);
+    }
 }
 
-function populateEditForm(bean) {
-    document.getElementById('beanId').value = bean.id || bean._id;
-    document.getElementById('beanClass').value = bean.Class || bean.class || '';
-    document.getElementById('beanArea').value = bean.Area || bean.area || '';
-    document.getElementById('beanPerimeter').value = bean.Perimeter || bean.perimeter || '';
-    document.getElementById('beanMajorAxis').value = bean.MajorAxisLength || bean.major_axis_length || '';
-    document.getElementById('beanMinorAxis').value = bean.MinorAxisLength || bean.minor_axis_length || '';
-
-    document.getElementById('formTitle').textContent = 'Edit Bean';
-    document.getElementById('cancelBtn').classList.remove('d-none');
-    currentEditingId = bean.id || bean._id;
-
-    document.getElementById('beanForm').scrollIntoView({ behavior: 'smooth' });
-}
-
-async function deleteBean(e) {
+async function deleteBean(beanId) {
     if (!confirm('Are you sure you want to delete this bean?')) return;
 
-    const beanId = e.currentTarget.getAttribute('data-id');
     try {
+        showLoading(true);
         const response = await fetch(`${API_BASE_URL}/${beanId}`, {
             method: 'DELETE'
         });
@@ -210,15 +304,9 @@ async function deleteBean(e) {
     } catch (error) {
         console.error('Error deleting bean:', error);
         showError(`Failed to delete bean: ${error.message}`);
+    } finally {
+        showLoading(false);
     }
-}
-
-function resetForm() {
-    document.getElementById('beanForm').reset();
-    document.getElementById('beanId').value = '';
-    document.getElementById('formTitle').textContent = 'Add New Bean';
-    document.getElementById('cancelBtn').classList.add('d-none');
-    currentEditingId = null;
 }
 
 // Helper functions
@@ -227,32 +315,25 @@ function formatNumber(value) {
 }
 
 function showLoading(show) {
-    const loader = document.createElement('div');
-    loader.id = 'loadingIndicator';
-    loader.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+    const loader = document.getElementById('loadingIndicator');
     if (show) {
-        document.body.appendChild(loader);
+        loader.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
     } else {
-        const existingLoader = document.getElementById('loadingIndicator');
-        if (existingLoader) existingLoader.remove();
+        loader.innerHTML = '';
     }
 }
 
 function showMessage(message) {
     const messageDiv = document.getElementById('message');
-    if (messageDiv) {
-        messageDiv.textContent = message;
-        messageDiv.className = 'alert alert-success';
-        messageDiv.style.display = 'block';
-        setTimeout(() => messageDiv.style.display = 'none', 3000);
-    }
+    messageDiv.textContent = message;
+    messageDiv.className = 'alert alert-success';
+    messageDiv.style.display = 'block';
+    setTimeout(() => messageDiv.style.display = 'none', 3000);
 }
 
 function showError(message) {
     const messageDiv = document.getElementById('message');
-    if (messageDiv) {
-        messageDiv.textContent = message;
-        messageDiv.className = 'alert alert-danger';
-        messageDiv.style.display = 'block';
-    }
+    messageDiv.textContent = message;
+    messageDiv.className = 'alert alert-danger';
+    messageDiv.style.display = 'block';
 }
